@@ -77,6 +77,30 @@
         }
         
         // ... (나머지 함수 동일)
+        async function saveToServer() {
+        const API_URL = 'https://api.yourserver.com/save'; // 실제 주소로 변경하세요
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    totalA: document.getElementById('total-A').value,
+                    totalB: document.getElementById('total-B').value,
+                    data: monthlyData
+                })
+            });
+
+            if (response.ok) {
+                alert("데이터가 서버에 성공적으로 저장되었습니다.");
+            } else {
+                alert("서버 오류: 데이터를 저장할 수 없습니다.");
+            }
+        } catch (error) {
+            console.error("통신 실패:", error);
+            alert("서버 연결에 실패했습니다.");
+        }
+    }
     </script>
 </body>
 </html>
