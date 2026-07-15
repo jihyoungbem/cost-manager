@@ -26,17 +26,22 @@
 
     <h2>[월간 원가 관리 대시보드]</h2>
     <div class="card">
-    <div style="display: flex; gap: 30px; align-items: center;">
-        <div>
-            도급금액(A): <input type="number" id="total-A" oninput="renderMonthlyTable()" value="0">
-        </div>
-        <div>
-            실행금액(B): <input type="number" id="total-B" oninput="renderMonthlyTable()" value="0">
-        </div>
-        <div style="font-weight: bold; color: var(--main);">
-            실행률(C): <span id="display-C">0.00</span>%
-        </div>
-    </div>
+    <table style="margin-top: 0;">
+        <thead>
+            <tr>
+                <th style="background-color: var(--main);">도급금액(A)</th>
+                <th style="background-color: var(--main);">실행금액(B)</th>
+                <th style="background-color: var(--main);">실행률(C=B/A)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><input type="number" id="total-A" oninput="renderMonthlyTable()" value="0" style="width: 80%;"></td>
+                <td><input type="number" id="total-B" oninput="renderMonthlyTable()" value="0" style="width: 80%;"></td>
+                <td style="font-weight: bold; font-size: 1.1em;"><span id="display-C">0.00</span>%</td>
+            </tr>
+        </tbody>
+    </table>
 </div>
 
     <div class="card">
