@@ -110,6 +110,18 @@
                 </tr>
             </thead>
             <tbody id="monthly-body"></tbody>
+            <tfoot id="monthly-footer" style="background-color: #f8f9fa; font-weight: bold; border-top: 3px solid #2c3e50;">
+            <tr>
+                <td colspan="2">합계(누계)</td>
+                <td id="sum-D">0</td>
+                <td id="sum-E">0.00%</td>
+                <td id="sum-F">0</td>
+                <td id="sum-G">0.00%</td>
+                <td id="sum-H">0%</td>
+                <td id="sum-I">0.00%</td>
+                <td id="sum-J">0.00%</td>
+            </tr>
+        </tfoot>
         </table>
         <button onclick="addRow()" style="margin-top:15px;">+ 월별 데이터 추가</button>
     </div>
@@ -210,12 +222,18 @@
             
             const tbody = document.getElementById('monthly-body');
             tbody.innerHTML = '';
+
+            let totalD = 0, totalF = 0, totalH = 0;
             
             monthlyData.forEach((row, index) => {
                 const E = A > 0 ? (row.dAmount / A) : 0;
                 const G = B > 0 ? (row.fAmount / B) : 0;
                 const I = (E * C);
                 const J = (G - I);
+
+                totalD += row.dAmount;
+                totalF += row.fAmount;
+                totalH += row.hPlan;
                 
                 const tr = document.createElement('tr');
                 tr.id = `row-${index}`; // 각 행에 ID 부여
@@ -252,6 +270,20 @@
 `;
                 tbody.appendChild(tr);
             });
+
+            const sumE = A > 0 ? (totalD / A) : 0;
+            const sumG = B > 0 ? (totalF / B) : 0;
+            const sumI = (sumE * C); // 누계에 대한 공식 적용
+            const sumJ = (sumG - sumI);
+
+            document.getElementById('sum-D').innerText = formatNum(totalD);
+            document.getElementById('sum-E').innerText = (sumE * 100).toFixed(2) + '%';
+            document.getElementById('sum-F').innerText = formatNum(totalF);
+            document.getElementById('sum-G').innerText = (sumG * 100).toFixed(2) + '%';
+            document.getElementById('sum-H').innerText = totalH.toFixed(1) + '%';
+            document.getElementById('sum-I').innerText = (sumI * 100).toFixed(2) + '%';
+            document.getElementById('sum-J').innerText = (sumJ * 100).toFixed(2) + '%';    
+
         }
 
         function changePassword() {
