@@ -109,19 +109,20 @@
                     <th class="bg-gold">도급계획(공정률)(H)</th><th class="bg-green-light">실행대비진행률(I=E*C)</th><th class="bg-gold">실투입비교(J=G-I)</th>
                 </tr>
             </thead>
-            <tbody id="monthly-body"></tbody>
-            <tfoot id="monthly-footer" style="background-color: #f8f9fa; font-weight: bold; border-top: 3px solid #2c3e50;">
-            <tr>
-                <td colspan="2">합계(누계)</td>
-                <td id="sum-D">0</td>
-                <td id="sum-E">0.00%</td>
-                <td id="sum-F">0</td>
-                <td id="sum-G">0.00%</td>
-                <td id="sum-H">0%</td>
-                <td id="sum-I">0.00%</td>
-                <td id="sum-J">0.00%</td>
-            </tr>
-        </tfoot>
+            <tbody id="monthly-summary" style="background-color: #f8f9fa; font-weight: bold; border-top: 3px solid #2c3e50;">
+        <tr>
+            <td colspan="2">합계(누계)</td>
+            <td id="sum-D">0</td>
+            <td id="sum-E">0.00%</td>
+            <td id="sum-F">0</td>
+            <td id="sum-G">0.00%</td>
+            <td id="sum-H">0%</td>
+            <td id="sum-I">0.00%</td>
+            <td id="sum-J">0.00%</td>
+        </tr>
+    </tbody>
+
+    <tbody id="monthly-body"></tbody>
         </table>
         <button onclick="addRow()" style="margin-top:15px;">+ 월별 데이터 추가</button>
     </div>
