@@ -62,40 +62,43 @@
         // 1. 변수 선언
         let monthlyData = [];
         let isEditable = false;
-        const PASSWORD = "123";
+        let currentPassword = localStorage.getItem('systemPassword') || "123";
 
         // 2. 기능 함수들
         function addRow() { monthlyData.push({ month: '', dAmount: 0, fAmount: 0, hPlan: 0 }); renderMonthlyTable(); }
 
         function renderMonthlyTable() {
-            const A = Number(document.getElementById('total-A').value);
-            const B = Number(document.getElementById('total-B').value);
-            const C = A > 0 ? (B / A) : 0;
-            // 추가: 화면에 실행률(C) 업데이트
-            document.getElementById('display-C').innerText = (C * 100).toFixed(2);
-            const tbody = document.getElementById('monthly-body');
-            tbody.innerHTML = '';
-            
-            monthlyData.forEach((row, index) => {
-                const E = A > 0 ? (row.dAmount / A) : 0;
-                const G = B > 0 ? (row.fAmount / B) : 0;
-                const I = (row.hPlan * C);
-                const J = (G - I);
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><button onclick="monthlyData.splice(${index},1); renderMonthlyTable()">삭제</button></td>
-                    <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
-                    <td><input type="number" value="${row.dAmount}" oninput="monthlyData[${index}].dAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
-                    <td>${(E*100).toFixed(2)}% <div class="progress-container"><div class="progress-bar" style="width:${E*100}%"></div></div></td>
-                    <td><input type="number" value="${row.fAmount}" oninput="monthlyData[${index}].fAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
-                    <td>${(G*100).toFixed(2)}% <div class="progress-container"><div class="progress-bar" style="width:${G*100}%"></div></div></td>
-                    <td><input type="number" value="${row.hPlan}" oninput="monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
-                    <td>${(I*100).toFixed(2)}%</td>
-                    <td>${(J*100).toFixed(2)}%</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        const A = Number(document.getElementById('total-A').value);
+        const B = Number(document.getElementById('total-B').value);
+        const C = A > 0 ? (B / A) : 0;
+        
+        // 실행률(C) 업데이트 (HTML에 <span id="display-C">가 있어야 함)
+        const displayC = document.getElementById('display-C');
+        if(displayC) displayC.innerText = (C * 100).toFixed(2);
+
+        const tbody = document.getElementById('monthly-body');
+        tbody.innerHTML = '';
+        
+        monthlyData.forEach((row, index) => {
+            const E = A > 0 ? (row.dAmount / A) : 0;
+            const G = B > 0 ? (row.fAmount / B) : 0;
+            const I = (row.hPlan * C);
+            const J = (G - I);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><button onclick="monthlyData.splice(${index},1); renderMonthlyTable()">삭제</button></td>
+                <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
+                <td><input type="number" value="${row.dAmount}" oninput="monthlyData[${index}].dAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
+                <td>${(E*100).toFixed(2)}%</td>
+                <td><input type="number" value="${row.fAmount}" oninput="monthlyData[${index}].fAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
+                <td>${(G*100).toFixed(2)}%</td>
+                <td><input type="number" value="${row.hPlan}" oninput="monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
+                <td>${(I*100).toFixed(2)}%</td>
+                <td>${(J*100).toFixed(2)}%</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
         function changePassword() {
         const oldPass = prompt("현재 비밀번호를 입력하세요:");
         if (oldPass === currentPassword) {
