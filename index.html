@@ -8,15 +8,17 @@
         body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; padding: 20px; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; border: 1px solid #7f8c8d; text-align: center; } /* 칸 구분 선 명확화 */
+        /* 표 선을 아주 진한 검정색으로 설정 */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 2px solid #000; }
+        th, td { padding: 10px; border: 1px solid #000 !important; text-align: center; } 
         th { color: white; }
         
         input { width: 90%; border: 1px solid #ccc; padding: 5px; text-align: center; }
         
+        /* 색상 클래스 */
         .bg-blue { background-color: #2980b9 !important; }
         .bg-green { background-color: #27ae60 !important; }
-        .bg-green-light { background-color: #2ecc71 !important; } 
+        .bg-green-light { background-color: #2ecc71 !important; color: #000; font-weight: bold; } 
         .bg-gold { background-color: #f39c12 !important; }
         .bg-main { background-color: var(--main) !important; }
 
@@ -32,6 +34,7 @@
         <button onclick="changePassword()">🔑 비밀번호 변경</button>
         <button onclick="window.print()">🖨️ 인쇄하기</button>
         <button onclick="saveToServer()">☁️ 서버 저장</button>
+        <span id="status-indicator" class="disconnected">● 서버 연결 확인중...</span>
     </div>
 
     <div class="card">
@@ -47,7 +50,7 @@
                 <tr>
                     <td><input type="number" id="total-A" oninput="renderMonthlyTable()" value="0"></td>
                     <td><input type="number" id="total-B" oninput="renderMonthlyTable()" value="0"></td>
-                    <td style="font-weight: bold;"><span id="display-C">0.00</span>%</td>
+                    <td class="bg-green-light" style="font-weight: bold;"><span id="display-C">0.00</span>%</td>
                 </tr>
             </tbody>
         </table>
@@ -109,24 +112,19 @@
             });
         }
 
+        // 비밀번호 및 기타 로직은 동일합니다...
         function changePassword() {
             const oldPass = prompt("현재 비밀번호:");
             if (oldPass === currentPassword) {
                 const newPass = prompt("새로운 비밀번호:");
-                if (newPass) {
-                    currentPassword = newPass;
-                    localStorage.setItem('systemPassword', newPass);
-                    alert("비밀번호가 변경되었습니다.");
-                }
-            } else { alert("비밀번호가 틀렸습니다."); }
+                if (newPass) { currentPassword = newPass; localStorage.setItem('systemPassword', newPass); alert("변경 완료"); }
+            } else { alert("비밀번호 불일치"); }
         }
 
         function toggleEdit() {
             const input = prompt("관리자 비밀번호:");
-            if (input === currentPassword) {
-                isEditable = !isEditable;
-                renderMonthlyTable();
-            } else { alert("비밀번호가 틀렸습니다."); }
+            if (input === currentPassword) { isEditable = !isEditable; renderMonthlyTable(); } 
+            else { alert("비밀번호 불일치"); }
         }
 
         async function saveToServer() { alert("저장 기능은 서버 연동 후 확인 가능합니다."); }
