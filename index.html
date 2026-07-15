@@ -101,20 +101,26 @@
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><button onclick="monthlyData.splice(${index},1); renderMonthlyTable()">삭제</button></td>
-                    <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
-                    
-                    <td><input type="number" value="${row.dAmount}" oninput="monthlyData[${index}].dAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
-                    <td>${(E*100).toFixed(2)}%</td>
-                    
-                    <td><input type="number" value="${row.fAmount}" oninput="monthlyData[${index}].fAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
-                    <td>${(G*100).toFixed(2)}%</td>
-                    
-                    <td><input type="number" value="${row.hPlan}" oninput="monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
-                    
-                    <td class="bg-green-light">${(I*100).toFixed(2)}%</td>
-                    <td>${(J*100).toFixed(2)}%</td>
-                `;
+    <td><button onclick="monthlyData.splice(${index},1); renderMonthlyTable()">삭제</button></td>
+    <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
+    
+    <td>
+        <input type="number" value="${row.dAmount}" oninput="monthlyData[${index}].dAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
+        <div style="font-size: 0.8em; color: #555;">${formatNumber(row.dAmount)}</div>
+    </td>
+    
+    <td>${(E*100).toFixed(2)}%</td>
+    
+    <td>
+        <input type="number" value="${row.fAmount}" oninput="monthlyData[${index}].fAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
+        <div style="font-size: 0.8em; color: #555;">${formatNumber(row.fAmount)}</div>
+    </td>
+    
+    <td>${(G*100).toFixed(2)}%</td>
+    <td><input type="number" value="${row.hPlan}" oninput="monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
+    <td class="bg-green-light">${(I*100).toFixed(2)}%</td>
+    <td>${(J*100).toFixed(2)}%</td>
+`;
                 tbody.appendChild(tr);
             });
         }
