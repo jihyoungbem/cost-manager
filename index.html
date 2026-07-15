@@ -15,9 +15,17 @@
     input { 
         width: 90%; 
         border: 1px solid #ccc; 
-        padding: 5px; 
+        padding: 8px; /* 패딩 증가 */
         text-align: center; 
         box-sizing: border-box; 
+        font-size: 1em;
+    }
+    
+    /* 요청 2: 상단 입력란 스타일 */
+    #total-A, #total-B {
+        font-size: 1.5em; /* 기존의 약 2배 */
+        font-weight: bold;
+        color: #2980b9;
     }
     
     .display-comma {
@@ -34,6 +42,20 @@
     .bg-green-light { background-color: #2ecc71 !important; color: #000; font-weight: bold; } 
     .bg-gold { background-color: #f39c12 !important; }
 
+    /* 요청 1: 서버 상태 점등식 UI */
+    .status-dot {
+        height: 15px;
+        width: 15px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+        transition: background-color 0.3s;
+        vertical-align: middle;
+    }
+    .status-dot.online { background-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
+    .status-dot.offline { background-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+    .status-dot.checking { background-color: #f1c40f; }
+
     @media print { 
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         .no-print { display: none; } 
@@ -47,10 +69,10 @@
         <button onclick="window.print()">🖨️ 인쇄하기</button>
         <button onclick="saveToServer()">☁️ 서버 저장</button>
 
-        <div class="status-container" style="display:inline-flex; margin-left:15px;">
-        <span id="status-dot" class="dot"></span>
-        <span id="status-text">서버 확인중...</span>
-         </div>
+        <div class="status-container" style="display:inline-flex; margin-left:15px; align-items:center;">
+            <span id="status-dot" class="status-dot checking"></span>
+            <span id="status-text">서버 확인중...</span>
+             </div>
     </div>
 
     <div class="card">
@@ -64,8 +86,9 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><input type="number" id="total-A" oninput="renderMonthlyTable()" value="0"></td>
-                    <td><input type="number" id="total-B" oninput="renderMonthlyTable()" value="0"></td>
+                    {/* 요청 2 적용: 폰트 크기 2배 및 실시간 콤마 */}
+                    <td><input type="text" id="total-A" oninput="handleTotalInput(this)" onchange="formatFinal(this)" value="0"></td>
+                    <td><input type="text" id="total-B" oninput="handleTotalInput(this)" onchange="formatFinal(this)" value="0"></td>
                     <td class="bg-green-light" style="font-weight: bold;"><span id="display-C">0.00</span>%</td>
                 </tr>
             </tbody>
@@ -97,16 +120,92 @@
         let isEditable = false;
         let currentPassword = localStorage.getItem('systemPassword') || "123";
 
-        // 숫자 콤마 적용 함수
-        function formatNum(val) { return Number(val).toLocaleString('ko-KR', {maximumFractionDigits: 0}); }
+        // 유틸리티: 숫자만 남기기
+        function cleanNumber(val) {
+            if (!val) return 0;
+            return Number(String(val).replace(/[^0-9.-]+/g, ''));
+        }
 
-        function addRow() { monthlyData.push({ month: '', dAmount: 0, fAmount: 0, hPlan: 0 }); renderMonthlyTable(); }
-        function formatNumber(num) {
-    return Number(num).toLocaleString('ko-KR');
-}
+        // 유틸리티: 천단위 콤마 적용
+        function formatNum(num) {
+            return Number(num).toLocaleString('ko-KR');
+        }
+
+        function addRow() { 
+            monthlyData.push({ month: '', dAmount: 0, fAmount: 0, hPlan: 0 }); 
+            renderMonthlyTable(); 
+        }
+
+        // 요청 3 핵심 수정: 입력 시 포커스 안 팅기게 하는 로직
+        // 1. 입력 중에는 데이터만 업데이트
+        function handleCellInput(index, field, value) {
+            // 숫자만 추출
+            const cleanVal = cleanNumber(value);
+            // 데이터 배열 업데이트
+            monthlyData[index][field] = cleanVal;
+            
+            // 중요: 여기서 renderMonthlyTable()을 전체 호출하지 않음.
+            // 계산 결과만 즉시 반영 (DOM 직접 수정)
+            updateCalculatedFields(index);
+        }
+
+        // 2. 포커스를 잃었을 때(onchange) 콤마 포맷팅 적용
+        function formatCellOnBlur(input) {
+            input.value = formatNum(input.value);
+        }
+
+        // 상단 총괄 입력용 실시간 콤마 처리
+        function handleTotalInput(input) {
+            // 커서 위치 저장
+            let start = input.selectionStart;
+            let originalLen = input.value.length;
+
+            // 값 변경
+            let num = cleanNumber(input.value);
+            input.value = formatNum(num);
+
+            // 커서 위치 복원 보정
+            let newLen = input.value.length;
+            input.setSelectionRange(start + (newLen - originalLen), start + (newLen - originalLen));
+
+            renderMonthlyTable(); // 상단은 전체 재계산 필요
+        }
+
+        // 포커스 아웃 시 최종 포맷팅
+        function formatFinal(input) {
+             input.value = formatNum(cleanNumber(input.value));
+        }
+
+
+        // 특정 행의 계산 결과만 DOM에서 업데이트 (깜빡임 방지)
+        function updateCalculatedFields(index) {
+            const row = monthlyData[index];
+            const A = cleanNumber(document.getElementById('total-A').value);
+            const B = cleanNumber(document.getElementById('total-B').value);
+            const C = A > 0 ? (B / A) : 0;
+
+            const E = A > 0 ? (row.dAmount / A) : 0;
+            const G = B > 0 ? (row.fAmount / B) : 0;
+            const I = (row.hPlan * C);
+            const J = (G - I);
+
+            // 해당 행의 계산된 셀들을 찾아 업데이트
+            const tr = document.getElementById(`row-${index}`);
+            if(tr) {
+                tr.querySelector('.cell-E').innerText = (E * 100).toFixed(2) + '%';
+                tr.querySelector('.cell-G').innerText = (G * 100).toFixed(2) + '%';
+                tr.querySelector('.cell-I').innerText = (I * 100).toFixed(2) + '%';
+                tr.querySelector('.cell-J').innerText = (J * 100).toFixed(2) + '%';
+            }
+            
+            // 상단 총괄 실행률도 업데이트
+            document.getElementById('display-C').innerText = (C * 100).toFixed(2);
+        }
+
+
         function renderMonthlyTable() {
-            const A = Number(document.getElementById('total-A').value);
-            const B = Number(document.getElementById('total-B').value);
+            const A = cleanNumber(document.getElementById('total-A').value);
+            const B = cleanNumber(document.getElementById('total-B').value);
             const C = A > 0 ? (B / A) : 0;
             document.getElementById('display-C').innerText = (C * 100).toFixed(2);
             
@@ -120,28 +219,37 @@
                 const J = (G - I);
                 
                 const tr = document.createElement('tr');
+                tr.id = `row-${index}`; // 각 행에 ID 부여
+
                 tr.innerHTML = `
     <td><button onclick="monthlyData.splice(${index},1); renderMonthlyTable()">삭제</button></td>
     <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
     
     <td>
-        <input type="text" value="${row.dAmount}" oninput="this.value=this.value.replace(/[^0-9]/g, ''); monthlyData[${index}].dAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
-        <div class="display-comma">${formatNumber(row.dAmount)}</div>
+        {/* 요청 3: oninput 변경, onchange로 포맷팅, 요청 4: 아래 display-comma 제거 */}
+        <input type="text" value="${formatNum(row.dAmount)}" 
+               oninput="handleCellInput(${index}, 'dAmount', this.value)" 
+               onchange="formatCellOnBlur(this)"
+               ${!isEditable?'disabled':''}>
     </td>
-    <td>${(E*100).toFixed(2)}%</td>
+    <td class="cell-E">${(E*100).toFixed(2)}%</td>
     
     <td>
-        <input type="text" value="${row.fAmount}" oninput="this.value=this.value.replace(/[^0-9]/g, ''); monthlyData[${index}].fAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
-        <div class="display-comma">${formatNumber(row.fAmount)}</div>
+        <input type="text" value="${formatNum(row.fAmount)}" 
+               oninput="handleCellInput(${index}, 'fAmount', this.value)" 
+               onchange="formatCellOnBlur(this)"
+               ${!isEditable?'disabled':''}>
     </td>
-    <td>${(G*100).toFixed(2)}%</td>
+    <td class="cell-G">${(G*100).toFixed(2)}%</td>
     
     <td>
-        <input type="text" value="${row.hPlan}" oninput="this.value=this.value.replace(/[^0-9]/g, ''); monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
+        <input type="text" value="${row.hPlan}" 
+               oninput="handleCellInput(${index}, 'hPlan', this.value)"
+               ${!isEditable?'disabled':''}>
     </td>
     
-    <td class="bg-green-light">${(I*100).toFixed(2)}%</td>
-    <td>${(J*100).toFixed(2)}%</td>
+    <td class="bg-green-light cell-I">${(I*100).toFixed(2)}%</td>
+    <td class="cell-J">${(J*100).toFixed(2)}%</td>
 `;
                 tbody.appendChild(tr);
             });
@@ -162,26 +270,44 @@
         }
 
         async function saveToServer() { alert("서버 저장 기능이 활성화되었습니다."); }
-        // 서버 상태 체크 함수
-    async function checkConnection() {
-        const dot = document.getElementById('status-dot');
-        const text = document.getElementById('status-text');
-        try {
-            // 실제 사용하시는 서버 API 주소로 변경하세요
-            const response = await fetch('https://api.yourserver.com/health', { mode: 'no-cors' });
-            dot.className = "dot online";
-            text.innerText = "서버 연결됨";
-        } catch (e) {
-            dot.className = "dot offline";
-            text.innerText = "서버 연결 실패";
-        }
-    }
+        
+        // 요청 1: 개선된 서버 상태 체크 함수
+        async function checkConnection() {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            
+            dot.className = "status-dot checking";
+            text.innerText = "서버 확인중...";
 
-    // 페이지 로드 시 1회 실행, 이후 10초마다 반복
-    window.addEventListener('load', function() {
-    checkConnection();
-    setInterval(checkConnection, 10000);
-});
+            try {
+                // NOTE: 실제 운영 환경에서는 CORS 설정이 된 엔드포인트가 필요합니다.
+                // 현재는 간단한 GET 요청을 보내 응답 헤더만 확인합니다.
+                // 응답 본문은 읽지 않아 속도를 높입니다.
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5초 타임아웃
+
+                const response = await fetch(window.location.href, { 
+                    method: 'HEAD', // 헤더만 요청
+                    mode: 'no-cors', // CORS 문제 우회
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                
+                // HEAD 요청이 성공하면 온라인으로 간주
+                dot.className = "status-dot online";
+                text.innerText = "서버 연결됨";
+            } catch (e) {
+                console.warn("서버 연결 실패:", e);
+                dot.className = "status-dot offline";
+                text.innerText = "서버 연결 실패";
+            }
+        }
+
+        // 페이지 로드 시 1회 실행, 이후 30초마다 반복 (너무 잦은 요청 방지)
+        window.addEventListener('load', function() {
+            checkConnection();
+            setInterval(checkConnection, 30000);
+        });
         
         // 초기 렌더링
         renderMonthlyTable();
