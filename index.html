@@ -86,7 +86,6 @@
             </thead>
             <tbody>
                 <tr>
-                    {/* 요청 2 적용: 폰트 크기 2배 및 실시간 콤마 */}
                     <td><input type="text" id="total-A" oninput="handleTotalInput(this)" onchange="formatFinal(this)" value="0"></td>
                     <td><input type="text" id="total-B" oninput="handleTotalInput(this)" onchange="formatFinal(this)" value="0"></td>
                     <td class="bg-green-light" style="font-weight: bold;"><span id="display-C">0.00</span>%</td>
@@ -107,7 +106,7 @@
                 <tr>
                     <th class="bg-blue">도급기성금액(D)</th><th class="bg-blue">도급대비진행률(E=D/A)</th>
                     <th class="bg-green">투입금액(F)</th><th class="bg-green">실행대비투입률(G=F/B)</th>
-                    <th class="bg-gold">도급계획(공정률)(H)</th><th class="bg-green-light">실행대비투입률(I=H*C)</th><th class="bg-gold">실투입비교(J=G-I)</th>
+                    <th class="bg-gold">도급계획(공정률)(H)</th><th class="bg-green-light">실행대비진행률(I=E*C)</th><th class="bg-gold">실투입비교(J=G-I)</th>
                 </tr>
             </thead>
             <tbody id="monthly-body"></tbody>
@@ -215,7 +214,7 @@
             monthlyData.forEach((row, index) => {
                 const E = A > 0 ? (row.dAmount / A) : 0;
                 const G = B > 0 ? (row.fAmount / B) : 0;
-                const I = (row.hPlan * C);
+                const I = (E * C);
                 const J = (G - I);
                 
                 const tr = document.createElement('tr');
@@ -226,7 +225,7 @@
     <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
     
     <td>
-        {/* 요청 3: oninput 변경, onchange로 포맷팅, 요청 4: 아래 display-comma 제거 */}
+        
         <input type="text" value="${formatNum(row.dAmount)}" 
                oninput="handleCellInput(${index}, 'dAmount', this.value)" 
                onchange="formatCellOnBlur(this)"
