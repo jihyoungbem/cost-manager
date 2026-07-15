@@ -58,6 +58,8 @@
             const A = Number(document.getElementById('total-A').value);
             const B = Number(document.getElementById('total-B').value);
             const C = A > 0 ? (B / A) : 0;
+            // 추가: 화면에 실행률(C) 업데이트
+            document.getElementById('display-C').innerText = (C * 100).toFixed(2);
             const tbody = document.getElementById('monthly-body');
             tbody.innerHTML = '';
             
