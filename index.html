@@ -18,6 +18,24 @@
         .bg-green { background-color: #27ae60 !important; }
         .bg-green-light { background-color: #2ecc71 !important; color: #000; font-weight: bold; } 
         .bg-gold { background-color: #f39c12 !important; }
+        /* 금액 입력값 표시용 스타일 */
+.display-comma {
+    font-size: 0.85em;
+    color: #2c3e50;
+    margin-top: 5px;
+    font-weight: bold;
+    border-top: 1px dashed #ccc;
+    padding-top: 2px;
+}
+
+/* 입력창을 text로 변경했을 때를 위한 스타일 조정 */
+input { 
+    width: 90%; 
+    border: 1px solid #ccc; 
+    padding: 5px; 
+    text-align: center; 
+    box-sizing: border-box; /* 크기 유지 */
+}
 
         @media print { 
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -31,6 +49,11 @@
         <button onclick="changePassword()">🔑 비밀번호 변경</button>
         <button onclick="window.print()">🖨️ 인쇄하기</button>
         <button onclick="saveToServer()">☁️ 서버 저장</button>
+
+        <div class="status-container" style="display:inline-flex; margin-left:15px;">
+        <span id="status-dot" class="dot"></span>
+        <span id="status-text">서버 확인중...</span>
+         </div>
     </div>
 
     <div class="card">
@@ -105,19 +128,21 @@
     <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
     
     <td>
-        <input type="number" value="${row.dAmount}" oninput="monthlyData[${index}].dAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
-        <div style="font-size: 0.8em; color: #555;">${formatNumber(row.dAmount)}</div>
+        <input type="text" value="${row.dAmount}" oninput="this.value=this.value.replace(/[^0-9]/g, ''); monthlyData[${index}].dAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
+        <div class="display-comma">${formatNumber(row.dAmount)}</div>
     </td>
-    
     <td>${(E*100).toFixed(2)}%</td>
     
     <td>
-        <input type="number" value="${row.fAmount}" oninput="monthlyData[${index}].fAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
-        <div style="font-size: 0.8em; color: #555;">${formatNumber(row.fAmount)}</div>
+        <input type="text" value="${row.fAmount}" oninput="this.value=this.value.replace(/[^0-9]/g, ''); monthlyData[${index}].fAmount=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
+        <div class="display-comma">${formatNumber(row.fAmount)}</div>
+    </td>
+    <td>${(G*100).toFixed(2)}%</td>
+    
+    <td>
+        <input type="text" value="${row.hPlan}" oninput="this.value=this.value.replace(/[^0-9]/g, ''); monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}>
     </td>
     
-    <td>${(G*100).toFixed(2)}%</td>
-    <td><input type="number" value="${row.hPlan}" oninput="monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
     <td class="bg-green-light">${(I*100).toFixed(2)}%</td>
     <td>${(J*100).toFixed(2)}%</td>
 `;
@@ -140,6 +165,26 @@
         }
 
         async function saveToServer() { alert("서버 저장 기능이 활성화되었습니다."); }
+        // 서버 상태 체크 함수
+    async function checkConnection() {
+        const dot = document.getElementById('status-dot');
+        const text = document.getElementById('status-text');
+        try {
+            // 실제 사용하시는 서버 API 주소로 변경하세요
+            const response = await fetch('https://api.yourserver.com/health', { mode: 'no-cors' });
+            dot.className = "dot online";
+            text.innerText = "서버 연결됨";
+        } catch (e) {
+            dot.className = "dot offline";
+            text.innerText = "서버 연결 실패";
+        }
+    }
+
+    // 페이지 로드 시 1회 실행, 이후 10초마다 반복
+    window.addEventListener('load', function() {
+    checkConnection();
+    setInterval(checkConnection, 10000);
+});
         
         // 초기 렌더링
         renderMonthlyTable();
