@@ -23,6 +23,13 @@
     </style>
 </head>
 <body>
+    <div class="card no-print">
+    <button onclick="toggleEdit()">🔒 편집 모드 전환</button>
+    <button onclick="changePassword()">🔑 비밀번호 변경</button>
+    <button onclick="window.print()">🖨️ 인쇄하기</button>
+    <button onclick="saveToServer()">☁️ 서버 저장</button>
+    <span id="status-indicator" class="disconnected">● 서버 연결 확인중...</span>
+</div>
 
     <div class="card">
         <table>
@@ -44,21 +51,29 @@
     </div>
 
     <div class="card">
-        <table id="monthly-table">
-            <thead>
-                <tr>
-                    <th class="bg-main" rowspan="2">관리</th>
-                    <th class="bg-main">구분(월)</th>
-                    <th class="bg-blue">도급기성금액</th>
-                    <th class="bg-main">진행률</th>
-                    <th class="bg-green">투입금액</th>
-                    <th class="bg-gold">실행대비투입률</th>
-                    </tr>
-            </thead>
-            <tbody id="monthly-body"></tbody>
-        </table>
-        <button onclick="addRow()">+ 월별 데이터 추가</button>
-    </div>
+    <table id="monthly-table">
+        <thead>
+            <tr>
+                <th class="bg-main" rowspan="2" style="width: 50px;">관리</th>
+                <th class="bg-main" rowspan="2">구분(월)</th>
+                <th class="bg-blue" colspan="2">도급(기성) 현황</th>
+                <th class="bg-green" colspan="2">투입 현황</th>
+                <th class="bg-gold" colspan="3">분석 결과</th>
+            </tr>
+            <tr>
+                <th class="bg-blue">도급기성금액(D)</th>
+                <th class="bg-blue">진행률(E)</th>
+                <th class="bg-green">투입금액(F)</th>
+                <th class="bg-green">투입률(G)</th>
+                <th class="bg-gold">도급계획률(H)</th>
+                <th class="bg-gold">실행대비 투입률(I)</th>
+                <th class="bg-gold">실투입 률 비교(J)</th>
+            </tr>
+        </thead>
+        <tbody id="monthly-body"></tbody>
+    </table>
+    <button onclick="addRow()" style="margin-top:15px; padding: 10px 20px;">+ 월별 데이터 추가</button>
+</div>
 
     <script>
         // 변수 및 함수 내용 (이전 코드와 동일하게 유지하되, 
@@ -75,6 +90,26 @@
                 alert(isEditable ? "편집 모드 활성화" : "읽기 전용 모드 전환");
             } else { alert("비밀번호가 틀렸습니다."); }
         }
+        // 1. 숫자 콤마 표시용 공통 함수 (화면 출력용)
+    function formatNumber(num) {
+        if (num === null || num === undefined) return "0";
+        return Number(num).toLocaleString('ko-KR');
+    }
+
+    // 2. 서버 저장 전 데이터 정제 함수 (서버 통신 시 필수)
+    function getCleanData() {
+        return monthlyData.map(row => ({
+            ...row,
+            dAmount: Number(row.dAmount),
+            fAmount: Number(row.fAmount),
+            hPlan: Number(row.hPlan)
+        }));
+    }
+
+    // 3. (옵션) 총괄 금액 콤마 자동 적용 이벤트
+    document.getElementById('total-A').addEventListener('blur', function() {
+        this.value = formatNumber(Number(this.value.replace(/,/g, '')));
+    });
         
         // ... (나머지 함수 동일)
         async function saveToServer() {
