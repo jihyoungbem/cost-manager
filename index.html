@@ -81,7 +81,9 @@
         function formatNum(val) { return Number(val).toLocaleString('ko-KR', {maximumFractionDigits: 0}); }
 
         function addRow() { monthlyData.push({ month: '', dAmount: 0, fAmount: 0, hPlan: 0 }); renderMonthlyTable(); }
-
+        function formatNumber(num) {
+    return Number(num).toLocaleString('ko-KR');
+}
         function renderMonthlyTable() {
             const A = Number(document.getElementById('total-A').value);
             const B = Number(document.getElementById('total-B').value);
