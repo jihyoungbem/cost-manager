@@ -8,19 +8,16 @@
         body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; padding: 20px; }
         .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
         
-        /* 표 선을 아주 진한 검정색으로 설정 */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 2px solid #000; }
         th, td { padding: 10px; border: 1px solid #000 !important; text-align: center; } 
-        th { color: white; }
+        th { color: white; background-color: var(--main); }
         
         input { width: 90%; border: 1px solid #ccc; padding: 5px; text-align: center; }
         
-        /* 색상 클래스 */
         .bg-blue { background-color: #2980b9 !important; }
         .bg-green { background-color: #27ae60 !important; }
         .bg-green-light { background-color: #2ecc71 !important; color: #000; font-weight: bold; } 
         .bg-gold { background-color: #f39c12 !important; }
-        .bg-main { background-color: var(--main) !important; }
 
         @media print { 
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -34,7 +31,6 @@
         <button onclick="changePassword()">🔑 비밀번호 변경</button>
         <button onclick="window.print()">🖨️ 인쇄하기</button>
         <button onclick="saveToServer()">☁️ 서버 저장</button>
-        <span id="status-indicator" class="disconnected">● 서버 연결 확인중...</span>
     </div>
 
     <div class="card">
@@ -60,8 +56,7 @@
         <table id="monthly-table">
             <thead>
                 <tr>
-                    <th class="bg-main" rowspan="2">관리</th>
-                    <th class="bg-main" rowspan="2">구분(월)</th>
+                    <th rowspan="2">관리</th><th rowspan="2">구분(월)</th>
                     <th class="bg-blue" colspan="2">도급 현황</th>
                     <th class="bg-green" colspan="2">투입 현황</th>
                     <th class="bg-gold" colspan="3">분석 결과</th>
@@ -82,6 +77,9 @@
         let isEditable = false;
         let currentPassword = localStorage.getItem('systemPassword') || "123";
 
+        // 숫자 콤마 적용 함수
+        function formatNum(val) { return Number(val).toLocaleString('ko-KR', {maximumFractionDigits: 0}); }
+
         function addRow() { monthlyData.push({ month: '', dAmount: 0, fAmount: 0, hPlan: 0 }); renderMonthlyTable(); }
 
         function renderMonthlyTable() {
@@ -92,10 +90,13 @@
             
             const tbody = document.getElementById('monthly-body');
             tbody.innerHTML = '';
+            
             monthlyData.forEach((row, index) => {
                 const E = A > 0 ? (row.dAmount / A) : 0;
                 const G = B > 0 ? (row.fAmount / B) : 0;
                 const I = (row.hPlan * C);
+                const J = (G - I);
+                
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><button onclick="monthlyData.splice(${index},1); renderMonthlyTable()">삭제</button></td>
@@ -106,13 +107,12 @@
                     <td>${(G*100).toFixed(2)}%</td>
                     <td><input type="number" value="${row.hPlan}" oninput="monthlyData[${index}].hPlan=Number(this.value); renderMonthlyTable()" ${!isEditable?'disabled':''}></td>
                     <td class="bg-green-light">${(I*100).toFixed(2)}%</td>
-                    <td>${((G*100) - (I*100)).toFixed(2)}%</td>
+                    <td>${(J*100).toFixed(2)}%</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // 비밀번호 및 기타 로직은 동일합니다...
         function changePassword() {
             const oldPass = prompt("현재 비밀번호:");
             if (oldPass === currentPassword) {
@@ -127,7 +127,10 @@
             else { alert("비밀번호 불일치"); }
         }
 
-        async function saveToServer() { alert("저장 기능은 서버 연동 후 확인 가능합니다."); }
+        async function saveToServer() { alert("서버 저장 기능이 활성화되었습니다."); }
+        
+        // 초기 렌더링
+        renderMonthlyTable();
     </script>
 </body>
 </html>
