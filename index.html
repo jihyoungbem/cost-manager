@@ -14,6 +14,10 @@
         input { width: 90%; border: 1px solid #ccc; padding: 5px; }
         .progress-container { width: 80px; height: 8px; background: #eee; display: inline-block; }
         .progress-bar { height: 100%; background: #007bff; }
+        /* 항목별 색상 지정 */
+        .bg-blue { background-color: #2980b9 !important; }   /* 도급/기성 관련 */
+        .bg-green { background-color: #27ae60 !important; }  /* 투입 관련 */
+        .bg-gold { background-color: #f39c12 !important; }   /* 실행/비율 관련 */
     </style>
 </head>
 <body>
@@ -42,6 +46,13 @@
             </tr>
         </tbody>
     </table>
+    <thead>
+    <tr>
+        <th class="bg-blue">도급기성금액</th>
+        <th class="bg-green">투입금액</th>
+        <th class="bg-gold">실행대비투입률</th>
+    </tr>
+</thead>
 </div>
 
     <div class="card">
