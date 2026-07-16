@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>종합 원가 관리 시스템</title>
+    <title>서이천 현장 도급 및 투입 원가</title>
     <style>
     :root { --main: #2c3e50; }
     body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; padding: 20px; }
@@ -128,7 +128,7 @@
     </div>
 
     <script>
-        let monthlyData = [];
+        let monthlyData = JSON.parse(localStorage.getItem('mySystemData')) || [];
         let isEditable = false;
         let currentPassword = localStorage.getItem('systemPassword') || "123";
 
@@ -292,8 +292,23 @@
             console.log("합계(D) 요소 찾기 성공여부:", !!document.getElementById('sum-D'));
 
             document.getElementById('sum-D').style.border = "2px solid red"; // 빨간 테두리가 생기면 요소는 찾은 것입니다.
-
+            saveToLocalStorage();
         }
+        function addRow() {
+    let newMonth = "25년 1월";
+    if (monthlyData.length > 0) {
+        let last = monthlyData[monthlyData.length - 1].month;
+        let match = last.match(/(\d+)년 (\d+)월/);
+        if (match) {
+            let y = parseInt(match[1]), m = parseInt(match[2]);
+            if (m === 12) { y++; m = 1; } else { m++; }
+            newMonth = `${y}년 ${m}월`;
+        }
+    }
+    monthlyData.push({ month: newMonth, dAmount: 0, fAmount: 0, hPlan: 0 });
+    renderMonthlyTable();
+    saveToLocalStorage();
+}
 
         function changePassword() {
             const oldPass = prompt("현재 비밀번호:");
@@ -310,6 +325,10 @@
         }
 
         async function saveToServer() { alert("서버 저장 기능이 활성화되었습니다."); }
+        function saveToLocalStorage() {
+    localStorage.setItem('mySystemData', JSON.stringify(monthlyData));
+}
+
         
         // 요청 1: 개선된 서버 상태 체크 함수
         async function checkConnection() {
@@ -342,6 +361,8 @@
                 text.innerText = "서버 연결 실패";
             }
         }
+
+
 
         // 페이지 로드 시 1회 실행, 이후 30초마다 반복 (너무 잦은 요청 방지)
         window.addEventListener('load', function() {
