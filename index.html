@@ -68,7 +68,6 @@
         <button onclick="changePassword()">🔑 비밀번호 변경</button>
         <button onclick="window.print()">🖨️ 인쇄하기</button>
         <button onclick="saveToServer()">☁️ 서버 저장</button>
-        <button onclick="manualLoadData()">데이터 다시 불러오기</button>
 
         <div class="status-container" style="display:inline-flex; margin-left:15px; align-items:center;">
             <span id="status-dot" class="status-dot checking"></span>
@@ -163,8 +162,6 @@
 
             // 3. 상단 합계만 따로 계산해서 업데이트 (전체 renderMonthlyTable을 호출하지 않음)
             updateSummary();
-
-            localStorage.setItem('monthlyDataBackup', JSON.stringify(monthlyData));
         }
 
         // 2. 포커스를 잃었을 때(onchange) 콤마 포맷팅 적용
@@ -292,7 +289,7 @@
             document.getElementById('sum-J').innerText = (sumJ * 100).toFixed(2) + '%'; 
             
             console.log("계산된 누계값:", { totalD, totalF, totalH });
-console.log("합계(D) 요소 찾기 성공여부:", !!document.getElementById('sum-D'));
+            console.log("합계(D) 요소 찾기 성공여부:", !!document.getElementById('sum-D'));
 
             document.getElementById('sum-D').style.border = "2px solid red"; // 빨간 테두리가 생기면 요소는 찾은 것입니다.
 
@@ -345,37 +342,11 @@ console.log("합계(D) 요소 찾기 성공여부:", !!document.getElementById('
                 text.innerText = "서버 연결 실패";
             }
         }
-        function manualLoadData() {
-    // 1. 확인 메시지 (사용자 실수 방지)
-    if (!confirm("현재 입력 중인 내용이 사라질 수 있습니다. 저장된 데이터를 불러오시겠습니까?")) {
-        return;
-    }
 
-    // 2. 로컬 백업 확인
-    const savedData = localStorage.getItem('monthlyDataBackup');
-    if (savedData) {
-        monthlyData = JSON.parse(savedData);
-        renderMonthlyTable();
-        alert("백업된 데이터를 성공적으로 불러왔습니다.");
-    } else {
-        alert("저장된 백업 데이터가 없습니다.");
-    }
-}
         // 페이지 로드 시 1회 실행, 이후 30초마다 반복 (너무 잦은 요청 방지)
         window.addEventListener('load', function() {
             checkConnection();
             setInterval(checkConnection, 30000);
-
-            const savedData = localStorage.getItem('monthlyDataBackup');
-    if (savedData) {
-        try {
-            monthlyData = JSON.parse(savedData);
-            renderMonthlyTable(); // 데이터가 있으면 즉시 렌더링
-            console.log("백업 데이터 로드 완료");
-        } catch (e) {
-            console.error("데이터 로드 실패:", e);
-        }
-    }
         });
         
         // 초기 렌더링
