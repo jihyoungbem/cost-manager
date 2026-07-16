@@ -354,51 +354,88 @@
             } else { alert("비밀번호가 불일치합니다."); }
         }
 
-        // 로컬스토리지 IO 스토리지 스냅샷 저장
-        function saveToLocalStorage() {
-            localStorage.setItem('mySystemData', JSON.stringify(monthlyData));
-            localStorage.setItem('totalA_Val', document.getElementById('total-A').value);
-            localStorage.setItem('totalB_Val', document.getElementById('total-B').value);
-        }
+// 1. 로컬스토리지 및 클라우드 DB 동시 저장 커넥터 (통합 확장됨)
+async function saveToLocalStorage() {
+    // [안전장치 1] 기존 내 PC 브라우저 창고에 안전하게 1차 백업
+    localStorage.setItem('mySystemData', JSON.stringify(monthlyData));
+    localStorage.setItem('totalA_Val', document.getElementById('total-A').value);
+    localStorage.setItem('totalB_Val', document.getElementById('total-B').value);
 
-        async function saveToServer() { alert("서버 저장 기능이 정상 작동 중입니다."); }
+    // [안전장치 2] 중앙 클라우드 데이터베이스(Render)로 보낼 배달 상자 패킹
+    const payload = {
+        total_a: document.getElementById('total-A').value,
+        total_b: document.getElementById('total-B').value,
+        monthly_data: monthlyData
+    };
+
+    try {
+        // Render 서버의 백엔드 주소로 데이터 전송
+        const response = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         
-        // 서버 가용성 헬스체크 통신 커넥터
-        async function checkConnection() {
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-            
-            dot.className = "status-dot checking";
-            text.innerText = "서버 확인중...";
-
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-                await fetch(window.location.href, { 
-                    method: 'HEAD', 
-                    mode: 'no-cors', 
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                
-                dot.className = "status-dot online";
-                text.innerText = "서버 연결됨";
-            } catch (e) {
-                console.warn("서버 연결 실패:", e);
-                dot.className = "status-dot offline";
-                text.innerText = "서버 연결 실패";
-            }
+        if (response.ok) {
+            console.log("☁️ 중앙 클라우드 데이터베이스 동기화 완료");
+        } else {
+            console.warn("⚠️ 서버 응답 에러 (로컬에만 안전하게 보관됨)");
         }
+    } catch (e) {
+        // 인터넷이 끊기거나 Render 서버가 잠자고 있을 때 에러 크래시 방지
+        console.error("클라우드 서버 전송 실패 (현재 오프라인 상태 저장):", e);
+    }
+}
+
+// 2. 서버 가용성 헬스체크 통신 커넥터 (기존 기능 유지 및 실제 백엔드 주소 대응)
+async function checkConnection() {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    
+    if (!dot || !text) return; // 에러 방지용 가드 코드
+    
+    dot.className = "status-dot checking";
+    text.innerText = "서버 확인중...";
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        // 실제 백엔드 데이터 API 경로를 직접 찔러서 살아있는지 확인합니다.
+        await fetch('/api/data', { 
+            method: 'HEAD', 
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        dot.className = "status-dot online";
+        text.innerText = "서버 연결됨";
+    } catch (e) {
+        console.warn("서버 연결 실패:", e);
+        dot.className = "status-dot offline";
+        text.innerText = "서버 연결 실패";
+    }
+}
 
         // 초기 어플리케이션 구동 진입점 (Life Cycle Bootstrap)
-        window.addEventListener('load', function() {
-            // 로컬스토리지 복원
-            document.getElementById('total-A').value = localStorage.getItem('totalA_Val') || "0";
-            document.getElementById('total-B').value = localStorage.getItem('totalB_Val') || "0";
-            
+        window.addEventListener('load', async function() {
             checkConnection();
             setInterval(checkConnection, 30000);
+    
+            try {
+                const response = await fetch('/api/data');
+                const serverData = await response.json();
+        
+                document.getElementById('total-A').value = serverData.total_a || "0";
+                document.getElementById('total-B').value = serverData.total_b || "0";
+                monthlyData = serverData.monthly_data || [];
+            } catch (e) {
+                console.error("서버 데이터 로드 실패, 로컬스토리지 백업 작동:", e);
+                monthlyData = JSON.parse(localStorage.getItem('mySystemData')) || [];
+                document.getElementById('total-A').value = localStorage.getItem('totalA_Val') || "0";
+                document.getElementById('total-B').value = localStorage.getItem('totalB_Val') || "0";
+            }
+    
             renderMonthlyTable();
         });
     </script>
