@@ -283,7 +283,10 @@
             document.getElementById('sum-G').innerText = (sumG * 100).toFixed(2) + '%';
             document.getElementById('sum-H').innerText = totalH.toFixed(1) + '%';
             document.getElementById('sum-I').innerText = (sumI * 100).toFixed(2) + '%';
-            document.getElementById('sum-J').innerText = (sumJ * 100).toFixed(2) + '%';    
+            document.getElementById('sum-J').innerText = (sumJ * 100).toFixed(2) + '%'; 
+            
+            console.log("계산된 누계값:", { totalD, totalF, totalH });
+console.log("합계(D) 요소 찾기 성공여부:", !!document.getElementById('sum-D'));
 
         }
 
