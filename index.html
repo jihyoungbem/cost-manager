@@ -345,7 +345,22 @@ console.log("합계(D) 요소 찾기 성공여부:", !!document.getElementById('
                 text.innerText = "서버 연결 실패";
             }
         }
+        function manualLoadData() {
+    // 1. 확인 메시지 (사용자 실수 방지)
+    if (!confirm("현재 입력 중인 내용이 사라질 수 있습니다. 저장된 데이터를 불러오시겠습니까?")) {
+        return;
+    }
 
+    // 2. 로컬 백업 확인
+    const savedData = localStorage.getItem('monthlyDataBackup');
+    if (savedData) {
+        monthlyData = JSON.parse(savedData);
+        renderMonthlyTable();
+        alert("백업된 데이터를 성공적으로 불러왔습니다.");
+    } else {
+        alert("저장된 백업 데이터가 없습니다.");
+    }
+}
         // 페이지 로드 시 1회 실행, 이후 30초마다 반복 (너무 잦은 요청 방지)
         window.addEventListener('load', function() {
             checkConnection();
