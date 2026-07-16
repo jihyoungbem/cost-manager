@@ -159,6 +159,9 @@
             // 중요: 여기서 renderMonthlyTable()을 전체 호출하지 않음.
             // 계산 결과만 즉시 반영 (DOM 직접 수정)
             updateCalculatedFields(index);
+
+            // 3. 상단 합계만 따로 계산해서 업데이트 (전체 renderMonthlyTable을 호출하지 않음)
+            updateSummary();
         }
 
         // 2. 포커스를 잃었을 때(onchange) 콤마 포맷팅 적용
