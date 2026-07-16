@@ -162,6 +162,8 @@
 
             // 3. 상단 합계만 따로 계산해서 업데이트 (전체 renderMonthlyTable을 호출하지 않음)
             updateSummary();
+
+            localStorage.setItem('monthlyDataBackup', JSON.stringify(monthlyData));
         }
 
         // 2. 포커스를 잃었을 때(onchange) 콤마 포맷팅 적용
@@ -237,7 +239,7 @@
 
                 totalD += row.dAmount;
                 totalF += row.fAmount;
-                totalH += row.hPlan;
+                totalH += Number(row.hPlan) || 0;
                 
                 const tr = document.createElement('tr');
                 tr.id = `row-${index}`; // 각 행에 ID 부여
@@ -347,6 +349,17 @@ console.log("합계(D) 요소 찾기 성공여부:", !!document.getElementById('
         window.addEventListener('load', function() {
             checkConnection();
             setInterval(checkConnection, 30000);
+
+            const savedData = localStorage.getItem('monthlyDataBackup');
+    if (savedData) {
+        try {
+            monthlyData = JSON.parse(savedData);
+            renderMonthlyTable(); // 데이터가 있으면 즉시 렌더링
+            console.log("백업 데이터 로드 완료");
+        } catch (e) {
+            console.error("데이터 로드 실패:", e);
+        }
+    }
         });
         
         // 초기 렌더링
