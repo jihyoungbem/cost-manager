@@ -2,442 +2,622 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>서이천 현장 도급 및 투입 원가 (Master 수석 전문가 검수본)</title>
+    <title>서이천현장 도급·원가 통합 웹 확인용 v2 (월별 실적)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root { --main: #2c3e50; }
-        body { font-family: 'Pretendard', sans-serif; background: #f4f7f6; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 2px solid #000; }
-        th, td { padding: 10px; border: 1px solid #000 !important; text-align: center; } 
-        th { color: white; background-color: var(--main); }
-        
-        input { 
-            width: 90%; 
-            border: 1px solid #ccc; 
-            padding: 8px; 
-            text-align: center; 
-            box-sizing: border-box; 
-            font-size: 1em;
-        }
-        input:disabled {
-            background-color: #eaeaea;
-            color: #7f8c8d;
-            border: 1px solid #d5dbdb;
-            cursor: not-allowed;
-        }
-        
-        #total-A, #total-B {
-            font-size: 1.5em; 
-            font-weight: bold;
-            color: #2980b9;
-        }
-        
-        .bg-blue { background-color: #2980b9 !important; }
-        .bg-green { background-color: #27ae60 !important; }
-        .bg-green-light { background-color: #2ecc71 !important; color: #000; font-weight: bold; } 
-        .bg-gold { background-color: #f39c12 !important; }
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 20px; background: #f8f9fa; color: #333; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .tab-container { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .tab { padding: 10px 18px; background: #e9ecef; border: 1px solid #ced4da; border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: bold; font-size: 14px; user-select: none; }
+        .tab.active { background: #fff; color: #007bff; border-top: 3px solid #007bff; border-bottom: 1px solid #fff; margin-bottom: -1px; }
 
-        .status-dot {
-            height: 15px;
-            width: 15px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-            transition: background-color 0.3s;
-            vertical-align: middle;
-        }
-        .status-dot.online { background-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
-        .status-dot.offline { background-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
-        .status-dot.checking { background-color: #f1c40f; }
+        .btn { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; margin-left: 5px; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger  { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-sm { padding: 4px 8px; font-size: 11px; margin: 0; }
 
-        .btn-delete {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-delete:disabled {
-            background-color: #bdc3c7;
-            cursor: not-allowed;
-        }
+        .dashboard { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        .dashboard-row { display: flex; gap: 20px; }
+        .dashboard-section { flex: 1; background: #fff; padding: 18px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 5px solid #007bff; }
+        .dashboard-section.budget  { border-top-color: #dc3545; }
+        .dashboard-section.analysis { border-top-color: #ffc107; background: #fffdf5; }
 
-        @media print { 
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .no-print { display: none; } 
-        }
+        .dashboard-section h2 { margin: 0 0 12px 0; font-size: 16px; color: #495057; border-bottom: 2px solid #f1f3f5; padding-bottom: 6px; }
+        .card-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .card-grid-analysis { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; }
+
+        .metrics-card { background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center; }
+        .metrics-card span { font-size: 12px; color: #868e96; display: block; margin-bottom: 5px; }
+        .metrics-card strong { font-size: 16px; color: #212529; word-break: break-all; }
+        .metrics-card.highlight strong { color: #007bff; font-size: 20px; }
+        .dashboard-section.budget .metrics-card.highlight strong { color: #dc3545; }
+        .dashboard-section.analysis .metrics-card { background: #fff; border: 1px solid #ffeeba; }
+
+        .table-container { background: #fff; border-radius: 8px 8px 0 0; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #dee2e6; }
+        table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+        th, td { padding: 9px 8px; border: 1px solid #dee2e6; text-align: right; font-size: 12px; }
+        th { background: #343a40; color: #fff; text-align: center; font-weight: 500; }
+        th.sub-head { background: #495057; }
+        th.analysis-head { background: #ffc107; color: #333; font-weight: bold; }
+        td.left { text-align: left; background: #fdfdfd; }
+        td.center { text-align: center; }
+
+        input { width: 92%; padding: 4px; text-align: right; border: 1px solid #ced4da; border-radius: 4px; font-size: 12px; }
+        input.text-input { text-align: left; }
+        input:disabled { background: #f1f3f5; border-color: #e9ecef; color: #495057; cursor: not-allowed; }
+
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .status-badge.lock   { background: #fff3cd; color: #856404; }
+        .status-badge.unlock { background: #d4edda; color: #155724; }
+
+        .table-action-area { padding: 15px; background: #fff; border-radius: 0 0 8px 8px; border: 1px solid #dee2e6; border-top: none; text-align: left; }
+        .text-danger { color: #dc3545; font-weight: bold; }
+        .text-success { color: #28a745; font-weight: bold; }
+
+        .sync-indicator { font-size: 11px; color: #6c757d; margin-left: 10px; font-weight: normal; }
+        .progress-bar-bg  { width: 80px; height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden; display: inline-block; margin-top: 4px; }
+        .progress-bar-fill { height: 100%; background: #007bff; }
+        .투입-bar-fill { background: #dc3544; }
+        .total-row td { background: #e9ecef; font-weight: bold; }
+
+        @media print { .no-print, .btn, .tab, .status-badge, .table-action-area { display: none !important; } }
     </style>
 </head>
 <body>
-    <div class="card no-print">
-        <button onclick="toggleEdit()">🔒 편집 모드 전환</button>
-        <button onclick="changePassword()">🔑 비밀번호 변경</button>
-        <button onclick="window.print()">🖨️ 인쇄하기</button>
-        <button onclick="saveToServer()">☁️ 서버 저장</button>
 
-        <div class="status-container" style="display:inline-flex; margin-left:15px; align-items:center;">
-            <span id="status-dot" class="status-dot checking"></span>
-            <span id="status-text">서버 확인중...</span>
+<div class="top-bar">
+    <div class="tab-container" id="tab-headers"></div>
+    <div>
+        <span id="sync-text" class="sync-indicator">🟢 서버 동기화 완료</span>
+        <span id="auth-status" class="status-badge lock">🔒 보기 모드 (잠김)</span>
+        <button class="btn btn-secondary" id="btn-toggle-edit" onclick="toggleEditMode()">🔓 편집 모드 전환</button>
+        <button class="btn btn-primary"  onclick="changePasswordSet()">🔑 암호 변경</button>
+        <button class="btn btn-secondary" onclick="downloadExcel()">📥 엑셀 양식</button>
+        <input type="file" id="fileInput" style="display:none" accept=".xlsx,.xls" onchange="uploadExcel(event)">
+        <button class="btn btn-success"   onclick="document.getElementById('fileInput').click()">📤 엑셀 업로드</button>
+        <button class="btn btn-primary"    onclick="window.print()">🖨️ 인쇄</button>
+    </div>
+</div>
+
+<!-- ============================== 상단 KPI 대시보드 ============================== -->
+<div class="dashboard">
+    <div class="dashboard-row">
+        <div class="dashboard-section">
+            <h2>도급 투입 및 진행률 (수주 기성)</h2>
+            <div class="card-grid">
+                <div class="metrics-card">
+                    <span>총 계약 도급금액</span>
+                    <input id="input-total-contract" type="text" onchange="updateStatic('contract')" disabled style="font-size:14px;text-align:right;border:1px solid #ced4da;border-radius:6px;padding:6px;">
+                </div>
+                <div class="metrics-card">
+                    <span>총 실투입(기성) 누계</span>
+                    <strong id="sum-c-amount">0 원</strong>
+                </div>
+                <div class="metrics-card highlight">
+                    <span>전체 도급 진행률 (A)</span>
+                    <strong id="sum-c-rate">0.00 %</strong>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-section budget">
+            <h2>실행 대비 실투입 및 투입률(원가)</h2>
+            <div class="card-grid">
+                <div class="metrics-card">
+                    <span>총 실행원가 예산</span>
+                    <input id="input-total-budget" type="text" onchange="updateStatic('budget')" disabled style="font-size:14px;text-align:right;border:1px solid #ced4da;border-radius:6px;padding:6px;">
+                </div>
+                <div class="metrics-card">
+                    <span>총 실투입 원가 누계</span>
+                    <strong id="sum-b-amount">0 원</strong>
+                </div>
+                <div class="metrics-card highlight">
+                    <span>전체 실행대비 투입률 (C)</span>
+                    <strong id="sum-b-rate">0.00 %</strong>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <table>
-            <thead>
-                <tr>
-                    <th class="bg-blue">도급(변경)금액(A')</th>
-                    <th class="bg-gold">실행금액(B)</th>
-                    <th class="bg-green-light">실행률(C=B/A)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><input type="text" id="total-A" oninput="handleTotalInput(this)" onchange="formatFinal(this)" value="0" disabled></td>
-                    <td><input type="text" id="total-B" oninput="handleTotalInput(this)" onchange="formatFinal(this)" value="0" disabled></td>
-                    <td class="bg-green-light" style="font-weight: bold;"><span id="display-C">0.00</span>%</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="dashboard-section analysis">
+        <h2>도급대비 실행, 계획 대비 투입</h2>
+        <div class="card-grid-analysis">
+            <div class="metrics-card">
+                <span>전체 계획공정률 (G · 강제입력/누계)</span>
+                <strong id="summary-g" style="color: #495057;">0.00 %</strong>
+            </div>
+            <div class="metrics-card">
+                <span>실행대비 투입률 (H = A × G)</span>
+                <strong id="summary-h" style="color: #007bff;">0.00 %</strong>
+            </div>
+            <div class="metrics-card">
+                <span>원가 투입률 (C)</span>
+                <strong id="summary-c" style="color: #dc3545;">0.00 %</strong>
+            </div>
+            <div class="metrics-card">
+                <span>목표 대비 투입 차이 (G − H)</span>
+                <strong id="summary-diff" style="font-size: 18px;">0.00 %</strong>
+            </div>
+        </div>
     </div>
+</div>
 
-    <div class="card">
-        <table id="monthly-table">
-            <thead>
-                <tr>
-                    <th rowspan="2">관리</th>
-                    <th rowspan="2">구분(월)</th>
-                    <th class="bg-blue" colspan="2">도급 현황</th>
-                    <th class="bg-green" colspan="2">투입 현황</th>
-                    <th class="bg-gold" colspan="3">실행대비계획비교</th>
-                </tr>
-                <tr>
-                    <th class="bg-blue">도급기성금액(D)</th>
-                    <th class="bg-blue">도급대비진행률(E=D/A)</th>
-                    <th class="bg-green">투입금액(F)</th>
-                    <th class="bg-green">실행대비투입률(G=F/B)</th>
-                    <th class="bg-gold">도급계획(공정률)(H)</th>
-                    <th class="bg-green-light">실행대비진행률(I=E*C)</th>
-                    <th class="bg-gold">실투입비교(J=G-I)</th>
-                </tr>
-            </thead>
-            <tbody id="monthly-summary" style="background-color: #f8f9fa; font-weight: bold; border-top: 3px solid #2c3e50;">
-                <tr>
-                    <td colspan="2">합계(누계)</td>
-                    <td id="sum-D">0</td>
-                    <td id="sum-E">0.00%</td>
-                    <td id="sum-F">0</td>
-                    <td id="sum-G">0.00%</td>
-                    <td id="sum-H">0%</td>
-                    <td id="sum-I">0.00%</td>
-                    <td id="sum-J">0.00%</td>
-                </tr>
-            </tbody>
-            <tbody id="monthly-body"></tbody>
-        </table>
-        <button id="btn-add-row" onclick="addRow()" style="margin-top:15px;" disabled>+ 월별 데이터 추가</button>
-    </div>
+<!-- ============================== 월별 실적 표 ============================== -->
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th rowspan="2" id="th-action" style="width: 4%; display: none;">관리</th>
+                <th rowspan="2" style="width: 14%;">공종 항목</th>
+                <th rowspan="2" style="width: 9%;">월</th>
+                <th colspan="2">도급기성 / 투입원가</th>
+                <th rowspan="2" class="analysis-head" style="width: 8%;">계획공정률 (%)<br/><small>강제입력</small></th>
+                <th colspan="3" class="analysis-head">도급·계획 대비 분석</th>
+            </tr>
+            <tr>
+                <th class="sub-head" style="width: 12%;">기성 금액</th>
+                <th class="sub-head" style="width: 12%;">투입 원가</th>
+                <th class="analysis-head" style="width: 11%;">도급 진행률 (A)<br/><small>누계 / 총계약</small></th>
+                <th class="analysis-head" style="width: 13%;">실행대비 투입률 (H)<br/><small>A × G</small></th>
+                <th class="analysis-head" style="width: 12%;">목표 대비 차이<br/><small>G − H</small></th>
+            </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+        <tfoot id="table-foot"></tfoot>
+    </table>
+</div>
 
-    <script>
-        // 전역 상태 변수 관리
-        let monthlyData = JSON.parse(localStorage.getItem('mySystemData')) || [];
-        let isEditable = false;
-        let currentPassword = localStorage.getItem('systemPassword') || "123";
+<div class="table-action-area" id="table-action-area" style="display: none;">
+    <button class="btn btn-success" onclick="addRow()">➕ 월 데이터 추가</button>
+    <span style="margin-left:12px; font-size:12px; color:#6c757d;">※ 마지막 행의 카테고리/월을 그대로 복제해 새 행을 만듭니다.</span>
+</div>
 
-        // 유틸리티 함수: 깨끗한 숫자 추출
-        function cleanNumber(val) {
-            if (!val) return 0;
-            return Number(String(val).replace(/[^0-9.-]+/g, ''));
+<script>
+/* ===================================================================
+   전역 상태 & 데이터 구조
+   {
+     sites: [
+       { id, name,
+         totalContractAmount: 1000000000,   // 총 계약 도급금액 (상단 입력)
+         totalBudgetAmount: 850000000,        // 총 실행원가 예산 (상단 입력)
+         items: [
+           { category: "철근콘크리트공사",
+             month: "25년 3월",
+             contractInput: 1100000000,        // 그 월 기성 금액
+             budgetInput:   11000000,           // 그 월 투입 원가
+             planRate:      0.5                 // 그 월 계획공정률 (강제입력)
+           }
+         ]
+       }
+     ]
+   }
+=================================================================== */
+let state = {
+    activeTabId: "site_1",
+    isEditable: false,
+    password: "1234",
+    sites: []
+};
+
+/* ===== 초기 템플릿 데이터 ===== */
+const DEFAULT_DATA = {
+    password: "1234",
+    activeTabId: "site_1",
+    sites: [
+        {
+            id: "site_1",
+            name: "제 1공구 현장",
+            totalContractAmount: 94500000000,
+            totalBudgetAmount:   88220222981,
+            items: [
+                { category: "철근콘크리트공사", month: "25년 1월", contractInput: 0,           budgetInput: 0,        planRate: 0   },
+                { category: "철근콘크리트공사", month: "25년 2월", contractInput: 0,           budgetInput: 0,        planRate: 0   },
+                { category: "철근콘크리트공사", month: "25년 3월", contractInput: 1100000000,   budgetInput: 11000000, planRate: 0.5 },
+                { category: "철근콘크리트공사", month: "25년 4월", contractInput: 1500000000,   budgetInput: 0,        planRate: 0   },
+                { category: "철근콘크리트공사", month: "25년 5월", contractInput: 1500000000,   budgetInput: 0,        planRate: 0   },
+                { category: "철근콘크리트공사", month: "25년 6월", contractInput: 1620000000,   budgetInput: 0,        planRate: 0   },
+                { category: "철근콘크리트공사", month: "25년 7월", contractInput: 1763000000,   budgetInput: 0,        planRate: 0   },
+                { category: "철근콘크리트공사", month: "25년 8월", contractInput: 3440000000,   budgetInput: 0,        planRate: 0   },
+                { category: "철근콘크리트공사", month: "25년 9월", contractInput: 5260000000,   budgetInput: 0,        planRate: 5.2 }
+            ]
         }
+    ]
+};
 
-        // 유틸리티 함수: 천단위 세퍼레이터(콤마) 적용
-        function formatNum(num) {
-            return Number(num).toLocaleString('ko-KR');
-        }
+/* ===================================================================
+   엑셀 양식 다운로드 / 업로드
+   양식 컬럼:  공종항목 | 월 | 기성금액 | 투입원가 | 계획공정률(%)
+   ※ 상단의 "총 계약 도급금액" / "총 실행원가 예산"은 동일 시트의
+      상단 메타 행(header row)에 별도로 기록 (업로드 시 자동 인식)
+=================================================================== */
+function downloadExcel() {
+    const site = state.sites.find(s => s.id === state.activeTabId);
+    if (!site) return;
 
-        // 월별 데이터 유효성 및 행 추가 기능
-        function addRow() {
-            if (!isEditable) return;
-            let newMonth = "25년 1월";
-            if (monthlyData.length > 0) {
-                let last = monthlyData[monthlyData.length - 1].month;
-                let match = last.match(/(\d+)년 (\d+)월/);
-                if (match) {
-                    let y = parseInt(match[1]), m = parseInt(match[2]);
-                    if (m === 12) { y++; m = 1; } else { m++; }
-                    newMonth = `${y}년 ${m}월`;
-                }
+    const wb = XLSX.utils.book_new();
+
+    /* ---- 메타 시트 (총 계약/총 예산 표시) ---- */
+    const meta = [
+        ["총 계약 도급금액", site.totalContractAmount || 0],
+        ["총 실행원가 예산", site.totalBudgetAmount  || 0],
+        []
+    ];
+    const wsMeta = XLSX.utils.aoa_to_sheet(meta);
+    XLSX.utils.book_append_sheet(wb, wsMeta, "메타");
+
+    /* ---- 데이터 시트 (월별 실적) ---- */
+    const rows = site.items.map(it => ({
+        "공종항목":      it.category,
+        "월":            it.month,
+        "기성금액":      it.contractInput,
+        "투입원가":      it.budgetInput,
+        "계획공정률(%)": it.planRate
+    }));
+    const wsData = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, wsData, "월별실적");
+
+    XLSX.writeFile(wb, `[${site.name}]월별실적_양식.xlsx`);
+}
+
+function uploadExcel(e) {
+    if (!state.isEditable) {
+        alert("편집 모드(🔓)에서만 업로드 가능합니다.");
+        e.target.value = "";
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const wb = XLSX.read(ev.target.result, { type: 'binary' });
+
+            const site = state.sites.find(s => s.id === state.activeTabId);
+
+            /* ---- 메타 시트에서 총액 읽기 ---- */
+            const metaSheet = wb.Sheets["메타"];
+            if (metaSheet) {
+                const metaRows = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
+                metaRows.forEach(row => {
+                    if (row[0] === "총 계약 도급금액") site.totalContractAmount = Number(row[1]) || 0;
+                    if (row[0] === "총 실행원가 예산")  site.totalBudgetAmount   = Number(row[1]) || 0;
+                });
             }
-            monthlyData.push({ month: newMonth, dAmount: 0, fAmount: 0, hPlan: 0 });
-            renderMonthlyTable();
-            saveToLocalStorage();
-        }
 
-        // 행 삭제 기능
-        function deleteRow(index) {
-            if (!isEditable) return;
-            monthlyData.splice(index, 1);
-            renderMonthlyTable();
-            saveToLocalStorage();
-        }
+            /* ---- 데이터 시트에서 월별 데이터 읽기 ---- */
+            const dataSheet = wb.Sheets["월별실적"] || wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(dataSheet);
 
-        // 키보드 실시간 입력 핸들러 (포커스 튕김 방지를 위한 핵심 로직)
-        function handleCellInput(index, field, value) {
-            const cleanVal = cleanNumber(value);
-            monthlyData[index][field] = cleanVal;
-            
-            // 전체를 다시 그리지 않고 해당 행의 연산 필드와 상단 요약(Summary)만 실시간 제어
-            updateCalculatedFields(index);
-            calculateTotalsAndSummary();
-        }
+            site.items = rows.map(r => ({
+                category:      r["공종항목"]      || "미분류",
+                month:         r["월"]            || "",
+                contractInput: Number(r["기성금액"])      || 0,
+                budgetInput:   Number(r["투입원가"])      || 0,
+                planRate:      Number(r["계획공정률(%)"]) || 0
+            }));
 
-        // 포커스 아웃 시 예쁘게 콤마 포맷팅 처리
-        function formatCellOnBlur(input, index, field) {
-            input.value = formatNum(monthlyData[index][field]);
-        }
-
-        // 상단 도급/실행 금액 입력 컨트롤러 (실시간 콤마 유지 및 전체 데이터 계산 동기화)
-        function handleTotalInput(input) {
-            let start = input.selectionStart;
-            let originalLen = input.value.length;
-
-            let num = cleanNumber(input.value);
-            input.value = formatNum(num);
-
-            let newLen = input.value.length;
-            input.setSelectionRange(start + (newLen - originalLen), start + (newLen - originalLen));
-
-            // 상단 총괄 금액 변화 시 모든 행의 비율 연산이 유기적으로 연동되어야 하므로 순차적 연산 수행
-            const A = cleanNumber(document.getElementById('total-A').value);
-            const B = cleanNumber(document.getElementById('total-B').value);
-            const C = A > 0 ? (B / A) : 0;
-            document.getElementById('display-C').innerText = (C * 100).toFixed(2);
-
-            // 각 행 리프레시 진행
-            monthlyData.forEach((_, idx) => updateCalculatedFields(idx));
-            calculateTotalsAndSummary();
-        }
-
-        function formatFinal(input) {
-             input.value = formatNum(cleanNumber(input.value));
-             saveToLocalStorage();
-        }
-
-        // 특정 행 내부의 DOM 데이터 부분 실시간 연산 업데이트
-        function updateCalculatedFields(index) {
-            const row = monthlyData[index];
-            const A = cleanNumber(document.getElementById('total-A').value);
-            const B = cleanNumber(document.getElementById('total-B').value);
-            const C = A > 0 ? (B / A) : 0;
-
-            const E = A > 0 ? (row.dAmount / A) : 0;
-            const G = B > 0 ? (row.fAmount / B) : 0;
-            const I = (E * C);
-            const J = (G - I);
-
-            const tr = document.getElementById(`row-${index}`);
-            if(tr) {
-                tr.querySelector('.cell-E').innerText = (E * 100).toFixed(2) + '%';
-                tr.querySelector('.cell-G').innerText = (G * 100).toFixed(2) + '%';
-                tr.querySelector('.cell-I').innerText = (I * 100).toFixed(2) + '%';
-                tr.querySelector('.cell-J').innerText = (J * 100).toFixed(2) + '%';
+            if (site.items.length === 0) {
+                site.items.push({ category: "새 공종", month: "25년 1월", contractInput: 0, budgetInput: 0, planRate: 0 });
             }
+
+            saveToServer();
+            render();
+            alert("엑셀 업로드 완료 — 표·상단 KPI가 자동 갱신되었습니다.");
+        } catch (err) {
+            console.error(err);
+            alert("엑셀 파일 해석 중 오류가 발생했습니다. 양식을 다시 확인해 주세요.");
         }
-
-        // 기존에 누락되어 런타임 크래시를 유발했던 핵심 누계 연산 기능 구현
-        function calculateTotalsAndSummary() {
-            const A = cleanNumber(document.getElementById('total-A').value);
-            const B = cleanNumber(document.getElementById('total-B').value);
-            const C = A > 0 ? (B / A) : 0;
-
-            let totalD = 0, totalF = 0, totalH = 0;
-
-            monthlyData.forEach(row => {
-                totalD += Number(row.dAmount) || 0;
-                totalF += Number(row.fAmount) || 0;
-                totalH += Number(row.hPlan) || 0;
-            });
-
-            const sumE = A > 0 ? (totalD / A) : 0;
-            const sumG = B > 0 ? (totalF / B) : 0;
-            const sumI = (sumE * C);
-            const sumJ = (sumG - sumI);
-
-            // 요약부 하드 바인딩
-            document.getElementById('sum-D').innerText = formatNum(totalD);
-            document.getElementById('sum-E').innerText = (sumE * 100).toFixed(2) + '%';
-            document.getElementById('sum-F').innerText = formatNum(totalF);
-            document.getElementById('sum-G').innerText = (sumG * 100).toFixed(2) + '%';
-            document.getElementById('sum-H').innerText = totalH.toFixed(1) + '%';
-            document.getElementById('sum-I').innerText = (sumI * 100).toFixed(2) + '%';
-            document.getElementById('sum-J').innerText = (sumJ * 100).toFixed(2) + '%';
-        }
-
-        // 전체 테이블 명세 드로잉 (초기화 및 모드 전환 시 안정적 바인딩)
-        function renderMonthlyTable() {
-            const A = cleanNumber(document.getElementById('total-A').value);
-            const B = cleanNumber(document.getElementById('total-B').value);
-            const C = A > 0 ? (B / A) : 0;
-            document.getElementById('display-C').innerText = (C * 100).toFixed(2);
-            
-            const tbody = document.getElementById('monthly-body');
-            tbody.innerHTML = '';
-
-            monthlyData.forEach((row, index) => {
-                const E = A > 0 ? (row.dAmount / A) : 0;
-                const G = B > 0 ? (row.fAmount / B) : 0;
-                const I = (E * C);
-                const J = (G - I);
-
-                const tr = document.createElement('tr');
-                tr.id = `row-${index}`;
-
-                tr.innerHTML = `
-                    <td><button class="btn-delete" onclick="deleteRow(${index})" ${!isEditable?'disabled':''}>삭제</button></td>
-                    <td><input type="text" value="${row.month}" onchange="monthlyData[${index}].month=this.value" ${!isEditable?'disabled':''}></td>
-                    <td>
-                        <input type="text" value="${formatNum(row.dAmount)}" 
-                               oninput="handleCellInput(${index}, 'dAmount', this.value)" 
-                               onchange="formatCellOnBlur(this, ${index}, 'dAmount')"
-                               ${!isEditable?'disabled':''}>
-                    </td>
-                    <td class="cell-E">${(E*100).toFixed(2)}%</td>
-                    <td>
-                        <input type="text" value="${formatNum(row.fAmount)}" 
-                               oninput="handleCellInput(${index}, 'fAmount', this.value)" 
-                               onchange="formatCellOnBlur(this, ${index}, 'fAmount')"
-                               ${!isEditable?'disabled':''}>
-                    </td>
-                    <td class="cell-G">${(G*100).toFixed(2)}%</td>
-                    <td>
-                        <input type="text" value="${row.hPlan}" 
-                               oninput="handleCellInput(${index}, 'hPlan', this.value)"
-                               ${!isEditable?'disabled':''}>
-                    </td>
-                    <td class="bg-green-light cell-I">${(I*100).toFixed(2)}%</td>
-                    <td class="cell-J">${(J*100).toFixed(2)}%</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // 누계 계산 및 렌더링 호출
-            calculateTotalsAndSummary();
-        }
-
-        // 비밀번호 조작 제어부
-        function changePassword() {
-            const oldPass = prompt("현재 비밀번호:");
-            if (oldPass === currentPassword) {
-                const newPass = prompt("새로운 비밀번호:");
-                if (newPass) { 
-                    currentPassword = newPass; 
-                    localStorage.setItem('systemPassword', newPass); 
-                    alert("비밀번호가 성공적으로 변경되었습니다."); 
-                }
-            } else { alert("비밀번호가 일치하지 않습니다."); }
-        }
-
-        // 권한 모드 잠금/해제 토글 스위치 (상단 금액부 잠금 장치 완전 연동)
-        function toggleEdit() {
-            const input = prompt("관리자 비밀번호를 입력하세요:");
-            if (input === currentPassword) { 
-                isEditable = !isEditable; 
-                
-                // 상단 입력 및 행추가 버튼 완벽한 제어
-                document.getElementById('total-A').disabled = !isEditable;
-                document.getElementById('total-B').disabled = !isEditable;
-                document.getElementById('btn-add-row').disabled = !isEditable;
-                
-                renderMonthlyTable(); 
-                alert(isEditable ? "🔓 편집 모드가 활성화되었습니다." : "🔒 편집 모드가 잠겼습니다.");
-            } else { alert("비밀번호가 불일치합니다."); }
-        }
-
-// 1. 로컬스토리지 및 클라우드 DB 동시 저장 커넥터 (통합 확장됨)
-async function saveToLocalStorage() {
-    // [안전장치 1] 기존 내 PC 브라우저 창고에 안전하게 1차 백업
-    localStorage.setItem('mySystemData', JSON.stringify(monthlyData));
-    localStorage.setItem('totalA_Val', document.getElementById('total-A').value);
-    localStorage.setItem('totalB_Val', document.getElementById('total-B').value);
-
-    // [안전장치 2] 중앙 클라우드 데이터베이스(Render)로 보낼 배달 상자 패킹
-    const payload = {
-        total_a: document.getElementById('total-A').value,
-        total_b: document.getElementById('total-B').value,
-        monthly_data: monthlyData
     };
+    reader.readAsBinaryString(e.target.files[0]);
+    e.target.value = "";
+}
 
+/* ===================================================================
+   서버 동기화 (Express + database.json)
+=================================================================== */
+async function initSystem() {
+    showSyncStatus("🔄 서버에서 데이터를 불러오는 중...");
     try {
-        // Render 서버의 백엔드 주소로 데이터 전송
+        const response = await fetch('/api/data');
+        const serverData = await response.json();
+        state.sites = serverData.sites || [];
+        state.password = serverData.password || "1234";
+        state.activeTabId = serverData.activeTabId || "site_1";
+        if (state.sites.length === 0) {
+            state.sites = JSON.parse(JSON.stringify(DEFAULT_DATA.sites));
+        }
+        showSyncStatus("🟢 서버 동기화 완료");
+    } catch (error) {
+        console.error("서버 연결 실패:", error);
+        showSyncStatus("🔴 서버 연결끊김 (오프라인 모드)");
+        state.sites = JSON.parse(JSON.stringify(DEFAULT_DATA.sites));
+    }
+    state.isEditable = false;
+    render();
+}
+
+async function saveToServer() {
+    showSyncStatus("💾 서버에 데이터 저장 중...");
+    try {
         const response = await fetch('/api/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                sites: state.sites,
+                password: state.password,
+                activeTabId: state.activeTabId
+            })
         });
-        
-        if (response.ok) {
-            console.log("☁️ 중앙 클라우드 데이터베이스 동기화 완료");
-        } else {
-            console.warn("⚠️ 서버 응답 에러 (로컬에만 안전하게 보관됨)");
+        const result = await response.json();
+        showSyncStatus(result.success ? "🟢 서버 실시간 저장 완료" : "⚠️ 서버 저장 오류");
+    } catch (error) {
+        showSyncStatus("🔴 통신 끊김 - 저장 불가");
+    }
+}
+function showSyncStatus(t) { document.getElementById('sync-text').innerText = t; }
+
+/* ===================================================================
+   권한 / 현장 관리
+=================================================================== */
+function toggleEditMode() {
+    if (state.isEditable) {
+        state.isEditable = false;
+        document.getElementById('auth-status').className = "status-badge lock";
+        document.getElementById('auth-status').innerText = "🔒 보기 모드 (잠김)";
+        document.getElementById('btn-toggle-edit').innerText = "🔓 편집 모드 전환";
+        saveToServer(); render();
+    } else {
+        const pw = prompt("편집 권한자 비밀번호를 입력하세요:");
+        if (pw === state.password) {
+            state.isEditable = true;
+            document.getElementById('auth-status').className = "status-badge unlock";
+            document.getElementById('auth-status').innerText = "🔓 편집자 모드 (활성)";
+            document.getElementById('btn-toggle-edit').innerText = "🔒 편집 완료 및 잠금";
+            render();
+        } else if (pw !== null) {
+            alert("비밀번호가 일치하지 않습니다.");
         }
-    } catch (e) {
-        // 인터넷이 끊기거나 Render 서버가 잠자고 있을 때 에러 크래시 방지
-        console.error("클라우드 서버 전송 실패 (현재 오프라인 상태 저장):", e);
     }
 }
 
-// 2. 서버 가용성 헬스체크 통신 커넥터 (기존 기능 유지 및 실제 백엔드 주소 대응)
-async function checkConnection() {
-    const dot = document.getElementById('status-dot');
-    const text = document.getElementById('status-text');
-    
-    if (!dot || !text) return; // 에러 방지용 가드 코드
-    
-    dot.className = "status-dot checking";
-    text.innerText = "서버 확인중...";
-
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        // 실제 백엔드 데이터 API 경로를 직접 찔러서 살아있는지 확인합니다.
-        await fetch('/api/data', { 
-            method: 'HEAD', 
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        
-        dot.className = "status-dot online";
-        text.innerText = "서버 연결됨";
-    } catch (e) {
-        console.warn("서버 연결 실패:", e);
-        dot.className = "status-dot offline";
-        text.innerText = "서버 연결 실패";
+function changePasswordSet() {
+    const cur = prompt("현재 비밀번호를 입력하세요:");
+    if (cur === state.password) {
+        const nw = prompt("새로운 비밀번호를 설정하세요:");
+        if (nw) { state.password = nw; saveToServer(); alert("비밀번호가 서버에 반영되었습니다."); }
+    } else if (cur !== null) {
+        alert("현재 비밀번호가 일치하지 않습니다.");
     }
 }
 
-        // 초기 어플리케이션 구동 진입점 (Life Cycle Bootstrap)
-        window.addEventListener('load', async function() {
-            checkConnection();
-            setInterval(checkConnection, 30000);
-    
-            try {
-                const response = await fetch('/api/data');
-                const serverData = await response.json();
-        
-                document.getElementById('total-A').value = serverData.total_a || "0";
-                document.getElementById('total-B').value = serverData.total_b || "0";
-                monthlyData = serverData.monthly_data || [];
-            } catch (e) {
-                console.error("서버 데이터 로드 실패, 로컬스토리지 백업 작동:", e);
-                monthlyData = JSON.parse(localStorage.getItem('mySystemData')) || [];
-                document.getElementById('total-A').value = localStorage.getItem('totalA_Val') || "0";
-                document.getElementById('total-B').value = localStorage.getItem('totalB_Val') || "0";
-            }
-    
-            renderMonthlyTable();
+function addNewSite() {
+    const name = prompt("새로운 현장명을 입력하세요:", `제 ${state.sites.length + 1} 현장`);
+    if (!name) return;
+    const id = `site_${Date.now()}`;
+    state.sites.push({
+        id, name,
+        totalContractAmount: 1000000000, totalBudgetAmount: 850000000,
+        items: [{ category: "철근콘크리트공사", month: "25년 1월", contractInput: 0, budgetInput: 0, planRate: 0 }]
+    });
+    state.activeTabId = id; saveToServer(); render();
+}
+
+function renameSite(siteId) {
+    const site = state.sites.find(s => s.id === siteId);
+    const name = prompt("변경할 현장명을 입력하세요:", site.name);
+    if (name && name.trim() !== "") { site.name = name.trim(); saveToServer(); render(); }
+}
+
+/* ===================================================================
+   표 행 관리
+=================================================================== */
+function addRow() {
+    const site = state.sites.find(s => s.id === state.activeTabId);
+    if (!site.items.length) {
+        site.items.push({ category: "새 공종", month: "25년 1월", contractInput: 0, budgetInput: 0, planRate: 0 });
+    } else {
+        const last = site.items[site.items.length - 1];
+        /* 기준 월에서 +1개월 자동 추정 (연/월 분리, 마지막 '월' 다음 달) */
+        const nextMonth = bumpMonth(last.month);
+        site.items.push({
+            category: last.category,
+            month: nextMonth,
+            contractInput: 0, budgetInput: 0, planRate: 0
         });
-    </script>
+    }
+    saveToServer(); renderTableAndSummary();
+}
+function bumpMonth(label) {
+    const m = label.match(/(\d+)년\s*(\d+)월/);
+    if (!m) return label + "+1";
+    let y = +m[1], mo = +m[2] + 1;
+    if (mo > 12) { mo = 1; y += 1; }
+    return `${y}년 ${mo}월`;
+}
+
+function deleteRow(index) {
+    if (!confirm("해당 월 데이터를 삭제하시겠습니까?")) return;
+    const site = state.sites.find(s => s.id === state.activeTabId);
+    site.items.splice(index, 1);
+    saveToServer(); renderTableAndSummary();
+}
+
+function updateCell(index, field, value) {
+    const site = state.sites.find(s => s.id === state.activeTabId);
+    const numFields = ['contractInput','budgetInput','planRate'];
+    if (numFields.includes(field)) site.items[index][field] = parseFloat(value) || 0;
+    else site.items[index][field] = value;
+    saveToServer(); renderTableAndSummary();
+}
+
+function updateStatic(kind) {
+    const site = state.sites.find(s => s.id === state.activeTabId);
+    const el = document.getElementById(kind === 'contract' ? 'input-total-contract' : 'input-total-budget');
+    const raw = el.value.replace(/,/g, '');
+    if (kind === 'contract') site.totalContractAmount = parseFloat(raw) || 0;
+    else                     site.totalBudgetAmount   = parseFloat(raw) || 0;
+    saveToServer(); renderTableAndSummary();
+}
+
+/* ===================================================================
+   렌더링
+=================================================================== */
+function render() {
+    renderTabs();
+    renderStaticInputs();
+    renderTableAndSummary();
+}
+
+function renderTabs() {
+    const c = document.getElementById('tab-headers'); c.innerHTML = '';
+    state.sites.forEach(site => {
+        const t = document.createElement('div');
+        t.className = `tab ${site.id === state.activeTabId ? 'active' : ''}`;
+        t.innerText = site.name;
+        if (state.isEditable) {
+            t.title = "더블클릭 시 현장명 변경";
+            t.ondblclick = (e) => { e.stopPropagation(); renameSite(site.id); };
+        }
+        t.onclick = () => {
+            state.activeTabId = site.id;
+            saveToServer(); renderTableAndSummary();
+            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+            t.classList.add('active');
+        };
+        c.appendChild(t);
+    });
+    if (state.isEditable) {
+        const b = document.createElement('button');
+        b.className = 'btn btn-success'; b.innerText = '+ 현장 추가';
+        b.onclick = addNewSite; c.appendChild(b);
+    }
+}
+
+function renderStaticInputs() {
+    const site = state.sites.find(s => s.id === state.activeTabId);
+    const tc = document.getElementById('input-total-contract');
+    const tb = document.getElementById('input-total-budget');
+    tc.value = Math.floor(site?.totalContractAmount || 0).toLocaleString();
+    tb.value = Math.floor(site?.totalBudgetAmount   || 0).toLocaleString();
+    tc.disabled = !state.isEditable;
+    tb.disabled = !state.isEditable;
+}
+
+function renderTableAndSummary() {
+    const site = state.sites.find(s => s.id === state.activeTabId);
+    if (!site) return;
+
+    const actionArea = document.getElementById('table-action-area');
+    const thAction   = document.getElementById('th-action');
+    if (state.isEditable) { actionArea.style.display = 'block'; thAction.style.display = ''; }
+    else                   { actionArea.style.display = 'none';  thAction.style.display = 'none'; }
+
+    /* ----- 합계(누계) 계산 ----- */
+    const totalContract = (site.totalContractAmount || 0);
+    const totalBudget   = (site.totalBudgetAmount   || 0);
+    const sumCInput = site.items.reduce((s, it) => s + (Number(it.contractInput) || 0), 0);
+    const sumBInput = site.items.reduce((s, it) => s + (Number(it.budgetInput)   || 0), 0);
+
+    /* 마지막 (또는 입력된 가장 큰) 계획공정률을 "누적 계획공정률"으로 사용 — 사용자가 직접 마지막 값을 입력 */
+    const accPlanRate = site.items.length ? (Number(site.items[site.items.length - 1].planRate) || 0) : 0;
+
+    const cRate = totalContract > 0 ? (sumCInput / totalContract) * 100 : 0;
+    const bRate = totalBudget   > 0 ? (sumBInput / totalBudget)   * 100 : 0;
+    const hRate = (cRate * accPlanRate) / 100;
+    const diffRate = accPlanRate - hRate;
+
+    /* ----- 상단 KPI 카드 업데이트 ----- */
+    document.getElementById('sum-c-amount').innerText = Math.floor(sumCInput).toLocaleString() + ' 원';
+    document.getElementById('sum-c-rate').innerText   = cRate.toFixed(2) + ' %';
+    document.getElementById('sum-b-amount').innerText = Math.floor(sumBInput).toLocaleString() + ' 원';
+    document.getElementById('sum-b-rate').innerText   = bRate.toFixed(2) + ' %';
+    document.getElementById('summary-g').innerText   = accPlanRate.toFixed(2) + ' %';
+    document.getElementById('summary-h').innerText   = hRate.toFixed(2) + ' %';
+    document.getElementById('summary-c').innerText   = bRate.toFixed(2) + ' %';
+
+    let diffColor = '#495057';
+    if (diffRate > 0) diffColor = '#28a745';
+    else if (diffRate < 0) diffColor = '#dc3545';
+    document.getElementById('summary-diff').innerText = (diffRate > 0 ? '+' : '') + diffRate.toFixed(2) + ' %';
+    document.getElementById('summary-diff').style.color = diffColor;
+
+    /* ----- 표 본문: 공종 rowSpan + 월 행 ----- */
+    const tbl = document.getElementById('table-body');
+    tbl.innerHTML = '';
+
+    /* 같은 category가 연속될 때 첫 행에만 rowSpan 적용 */
+    const rowSpanMap = {};
+    for (let i = 0; i < site.items.length; i++) {
+        if (rowSpanMap[i] !== undefined) continue;
+        let cnt = 1;
+        for (let j = i + 1; j < site.items.length; j++) {
+            if (site.items[j].category === site.items[i].category) cnt++;
+            else break;
+        }
+        rowSpanMap[i] = cnt;
+    }
+
+    site.items.forEach((item, index) => {
+        const isDis = !state.isEditable;
+        const tr = document.createElement('tr');
+
+        const actionCell = state.isEditable
+            ? `<td class="center"><button class="btn btn-danger btn-sm" onclick="deleteRow(${index})">삭제</button></td>` : '';
+
+        const catCell = rowSpanMap[index]
+            ? `<td class="left" rowspan="${rowSpanMap[index]}"><input class="text-input" type="text" value="${escapeHtml(item.category)}" ${isDis?'disabled':''} onchange="updateCell(${index}, 'category', this.value)"></td>`
+            : '';
+
+        const cRateCell = `
+            <div style="font-weight:bold; color:#28a745;">${cRate.toFixed(2)}%</div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${Math.min(cRate,100)}%"></div></div>`;
+        const bRateCell = `
+            <div style="font-weight:bold; color:#b12e2e;">${bRate.toFixed(2)}%</div>
+            <div class="progress-bar-bg"><div class="progress-bar-fill 투입-bar-fill" style="width:${Math.min(bRate,100)}%"></div></div>`;
+
+        /* 표 안 도급 진행률/실행대비투입률/목표차이는 "행 단위 누계"를 보여줌
+           (해당 월까지 누적된 값을 표시) -------------------------------- */
+        const uptoContract = site.items.slice(0, index + 1).reduce((s, it) => s + (Number(it.contractInput) || 0), 0);
+        const uptoPlanRate = Number(item.planRate) || 0;
+        const uptoCRate    = totalContract > 0 ? (uptoContract / totalContract) * 100 : 0;
+        const uptoHRate    = (uptoCRate * uptoPlanRate) / 100;
+        const uptoDiff     = uptoPlanRate - uptoHRate;
+
+        tr.innerHTML = `
+            ${actionCell}
+            ${catCell}
+            <td class="center"><input class="text-input" type="text" value="${escapeHtml(item.month)}" ${isDis?'disabled':''} style="text-align:center;" onchange="updateCell(${index}, 'month', this.value)"></td>
+            <td><input type="text" value="${Math.floor(item.contractInput).toLocaleString()}" ${isDis?'disabled':''} onchange="updateCell(${index}, 'contractInput', this.value.replace(/,/g, ''))"></td>
+            <td><input type="text" value="${Math.floor(item.budgetInput).toLocaleString()}" ${isDis?'disabled':''} onchange="updateCell(${index}, 'budgetInput', this.value.replace(/,/g, ''))"></td>
+            <td style="background:#fffdf5;"><input type="text" value="${Number(item.planRate) || 0}" ${isDis?'disabled':''} onchange="updateCell(${index}, 'planRate', this.value)" style="text-align:center;background:#fffbe6;"></td>
+            <td style="background:#fffdf5; text-align:center;">${cRateCell}</td>
+            <td style="background:#fffdf5; text-align:center; font-weight:bold; color:#007bff;">${uptoCRate.toFixed(2)} % × ${uptoPlanRate.toFixed(2)}% = ${uptoHRate.toFixed(2)} %</td>
+            <td style="background:#fffdf5; text-align:center; font-weight:bold; color:${uptoDiff >= 0 ? '#28a745' : '#dc3545'};">${(uptoDiff > 0 ? '+' : '') + uptoDiff.toFixed(2)} %</td>
+        `;
+        tbl.appendChild(tr);
+    });
+
+    /* ----- 표 하단 합계 행 ----- */
+    const foot = document.getElementById('table-foot');
+    foot.innerHTML = `
+        <tr class="total-row">
+            <td colspan="3" style="text-align:center;">합계(누계)</td>
+            <td>${Math.floor(sumCInput).toLocaleString()}</td>
+            <td>${Math.floor(sumBInput).toLocaleString()}</td>
+            <td style="text-align:center;">누적 ${accPlanRate.toFixed(2)} %</td>
+            <td style="text-align:center; color:#28a745;">${cRate.toFixed(2)} %</td>
+            <td style="text-align:center; color:#007bff;">${hRate.toFixed(2)} %</td>
+            <td style="text-align:center; color:${diffRate >= 0 ? '#28a745' : '#dc3545'};">${(diffRate > 0 ? '+' : '') + diffRate.toFixed(2)} %</td>
+        </tr>
+    `;
+}
+
+function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+}
+
+initSystem();
+</script>
 </body>
 </html>
